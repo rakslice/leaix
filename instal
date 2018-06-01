@@ -1,0 +1,109 @@
+#!/bin/sh
+#
+# This script file installs the driver in /etc/master,
+# /etc/system 
+#
+TRUE=1
+MASTER=/etc/master
+SYSTEM=/etc/system
+MAJNUM=44
+DEVICENAME=leaix
+
+if_failed() {
+	status=$1
+	errmsg=$2
+
+	if [ $status -ne 0 ]; then
+		echo Failed $errmsg
+		# cleanup
+		exit 99
+	fi
+}
+
+onintr() {
+	echo Aborted by user.
+	cleanup
+	exit 5
+}
+
+trap onintr 1 2 3
+
+cd /
+
+#
+#	Now patch some critical system files.
+#
+name=`uname -n`
+
+/bin/sed -n '/^'$DEVICENAME':/,/^[  ]*$/d
+p' < $MASTER > /tmp/master.tmp 2> /dev/null
+
+majnum=44;
+while [ $TRUE ]
+do
+  fgrep "major" /tmp/master.tmp | awk '{print $3}' | fgrep "$majnum" 1>/dev/null;
+  if [ $? -eq 0 ]
+  then majnum=`expr $majnum + 1`
+  else  break;
+  fi
+done
+echo
+echo Backing up /etc/master to /etc/master.orig
+/bin/cp  $MASTER  /etc/master.orig 2>/dev/null
+echo Patching /etc/master...
+echo
+/bin/cat /tmp/master.tmp - > $MASTER<<!
+
+leaix:  type = dev
+	routines = init,intr
+	softcfg = TRUE
+	nocount = TRUE
+	prefix = leaix
+	major = $majnum
+	character = TRUE
+
+!
+echo Backing up /etc/system to /etc/system.orig
+/bin/cp $SYSTEM  /etc/system.orig 2> /dev/null
+echo Patching /etc/system...
+echo
+if [ `grep -c '^pg:' /etc/system` != "0" ]
+then
+	echo "Removing Ungerman-Bass ethernet card from /etc/system"
+fi
+awk '
+BEGIN {inpg = 0}
+/^.*:/ {if ($1 == "pg:") inpg = 1}
+/^[ 	]*$/ {inpg = 0}
+inpg == 1 {print "*",$0}
+inpg == 0 {print $0}
+' $SYSTEM | /bin/sed -n '/ipc43/d
+/^sysparms:/a\
+	ipc43 = 1
+/^lenet0/,/^[  ]*$/d
+p' > /tmp/system.tmp 2> /dev/null
+/bin/cat /tmp/system.tmp - > $SYSTEM<<!
+
+lenet0:
+* AMD am799x Ethernet Device Driver
+	name = lenet
+	driver = leaix
+	minor = c0
+	noddi = true
+	noduplicate = false
+	dtype = lan
+* Local Area Network
+	pflag = false
+* AMD am799x Ethernet Device Driver
+	noshow = false
+	dname = lenet0
+	modes = rw-rw-rw-
+	owner = root
+	slot = ---
+	nospecial = true
+	specproc = /etc/lanspecial
+
+!
+
+/bin/rm -rf /tmp/master.tmp /tmp/system.tmp
+exit 0

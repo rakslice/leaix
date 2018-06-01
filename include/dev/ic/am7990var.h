@@ -1,5 +1,7 @@
 /*	$NetBSD: am7990var.h,v 1.1 1995/06/28 02:24:56 cgd Exp $	*/
 
+#include "am7990var_adds.h"
+
 /*
  * Copyright (c) 1995 Charles M. Hannum.  All rights reserved.
  *
@@ -32,7 +34,8 @@
 #ifdef DDB
 #define	integrate
 #else
-#define	integrate	static inline
+#define	integrate	static 
+/*#define	integrate	static inline*/
 #endif
 
 void leconfig __P((struct le_softc *));
@@ -43,21 +46,23 @@ void lereset __P((struct le_softc *));
 void lesetladrf __P((struct arpcom *, u_int16_t *));
 void lestart __P((struct ifnet *));
 void lestop __P((struct le_softc *));
-void lewatchdog __P((/* short */));
 
+int lewatchdog __P((/* short */));
+
+#if 0
 integrate u_int16_t lerdcsr __P((/* struct le_softc *, u_int16_t */));
 integrate void lewrcsr __P((/* struct le_softc *, u_int16_t, u_int16_t */));
+#endif
 
 integrate void lerint __P((struct le_softc *));
-integrate void letint __P((struct le_softc *));
 
 integrate int leput __P((struct le_softc *, int, struct mbuf *));
-integrate struct mbuf *leget __P((struct le_softc *, int, int));
+/* integrate struct mbuf *leget __P((struct le_softc *, int, int)); */
 integrate void leread __P((struct le_softc *, int, int));
 
 void copytodesc_contig(), copyfromdesc_contig();
 void copytobuf_contig(), copyfrombuf_contig(), zerobuf_contig();
-#ifdef 0
+#if 0
 void copytobuf_gap2(), copyfrombuf_gap2(), zerobuf_gap2();
 void copytobuf_gap16(), copyfrombuf_gap16(), zerobuf_gap16();
 #endif

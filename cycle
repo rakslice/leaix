@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+set -x
+
+# Quick script for churning another test cycle. 
+# Build the driver, install it, and restart
+
+make
+
+# Clean up old kernel builds
+#rm /local/unix.std.2? || true
+#rm /local/unix.std.3? || true
+#rm /local/patchdeck.2? || true
+#rm /local/patchdeck.3? || true
+make install
+
+sync
+reboot
+

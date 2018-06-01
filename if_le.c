@@ -39,40 +39,62 @@
  *	@(#)if_le.c	8.2 (Berkeley) 11/16/93
  */
 
-#include "bpfilter.h"
+#define DEBUG_STARTUP 0
+
+#include "am7990_adds.h"
+
+#include "add_types.h"
+
+#include "aix_io.h"
+
+#include <sys/i386/mmu386.h>
+#include <sys/i386/intr86.h>
+
+/* #include "bpfilter.h" */
 
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/mbuf.h>
 #include <sys/syslog.h>
 #include <sys/socket.h>
-#include <sys/device.h>
+/* #include <sys/device.h> */
+
+#include <stdio.h>
 
 #include <net/if.h>
 
 #ifdef INET
 #include <netinet/in.h>
-#include <netinet/if_ether.h>
+/* #include <netinet/if_ether.h> */
 #endif
 
-#include <vm/vm.h>
+/* #include <vm/vm.h> */
+#include <sys/vm.h>
+#include <sys/vmalloc.h>
 
+/*
 #include <machine/cpu.h>
 #include <machine/pio.h>
-
+*/
+/*
 #include "isa.h"
 #include "pci.h"
+*/
 
 #if NISA > 0
+/*
 #include <dev/isa/isareg.h>
 #include <dev/isa/isavar.h>
 #include <dev/isa/isadmavar.h>
 #include <i386/isa/isa_machdep.h>
+*/
 #endif
 
 #if NPCI > 0
+/*
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
+*/
 #endif
 
 #include <dev/isa/if_levar.h>
@@ -81,31 +103,59 @@
 
 char *card_type[] = {"unknown", "BICC Isolan", "NE2100", "DEPCA", "PCnet-ISA", "PCnet-PCI"};
 
-#define	LE_SOFTC(unit)	lecd.cd_devs[unit]
-#define	LE_DELAY(x)	delay(x)
+/* rak: we don't have the netbsd configuration infrastructure, just 
+hardcode for our purposes */
 
-int leprobe __P((struct device *, void *, void *));
+#define NUM_INTERFACES 1
+
+struct le_softc hardcoded_le_softc[NUM_INTERFACES];
+
+#define LE_SOFTC(unit) (&hardcoded_le_softc[(unit)])
+
+struct isa_attach_args hardcoded_isa_attach_args[NUM_INTERFACES];
+
+#define ISA_ATTACH_ARGS(unit) (&hardcoded_isa_attach_args[(unit)])
+
+int hardcoded_le_busy[NUM_INTERFACES];
+
+#define LE_BUSY(unit) hardcoded_le_busy[(unit)]
+
+/*
+#define	LE_SOFTC(unit)	lecd.cd_devs[unit]
+Too long:
+#define	LE_DELAY(x) delayticks(1);
+*/
+#define LE_DELAY(x) delayloop(x);
+/* rak: in netbsd this is delay(x) 
+        and the param is microsec. */
+
+int leprobe __P((/* struct device *,*/ void *, void *));
 int depca_probe __P((struct le_softc *, struct isa_attach_args *));
 int ne2100_probe __P((struct le_softc *, struct isa_attach_args *));
 int bicc_probe __P((struct le_softc *, struct isa_attach_args *));
 int lance_probe __P((struct le_softc *));
-void leattach __P((struct device *, struct device *, void *));
-int leintr __P((void *));
-int leintredge __P((void *));
+void leattach __P((/* struct device *, */ struct device *, void *));
+
+int leintr __P(());
+int leintredge __P(());
 void leshutdown __P((void *));
 
+/*
 struct cfdriver lecd = {
 	NULL, "le", leprobe, leattach, DV_IFNET, sizeof(struct le_softc)
 };
+*/
 
 integrate void
 lewrcsr(sc, port, val)
 	struct le_softc *sc;
 	u_int16_t port, val;
 {
-
-	outw(sc->sc_rap, port);
-	outw(sc->sc_rdp, val);
+	/*printf("leaix: write CSR%d: 0x%04x\n", port, val);*/
+	/*outw(sc->sc_rap, port);*/
+	ioout(sc->sc_rap, port);
+	/*outw(sc->sc_rdp, val);*/
+	ioout(sc->sc_rdp, val);
 }
 
 integrate u_int16_t
@@ -115,29 +165,32 @@ lerdcsr(sc, port)
 {
 	u_int16_t val;
 
-	outw(sc->sc_rap, port);
-	val = inw(sc->sc_rdp);
+	/*outw(sc->sc_rap, port);*/
+        ioout(sc->sc_rap, port);
+	/*val = inw(sc->sc_rdp);*/
+	val = ioin(sc->sc_rdp);
+	/*printf("leaix: read CSR%d: 0x%04x\n", port, val);*/
 	return (val);
 }
 
 int
-leprobe(parent, match, aux)
-	struct device *parent;
+leprobe(/* parent, */ match, aux)
+	/* struct device *parent; */
 	void *match, *aux;
 {
 	struct le_softc *sc = match;
-	extern struct cfdriver isacd, pcicd;
+/*	extern struct cfdriver isacd, pcicd; */
 
 #if NISA > 0
-	if (parent->dv_cfdata->cf_driver == &isacd) {
+	if (1 /* parent->dv_cfdata->cf_driver == &isacd */) {
 		struct isa_attach_args *ia = aux;
 
-		if (bicc_probe(sc, ia))
-			return (1);
+/*		if (bicc_probe(sc, ia))
+			return (1); */
 		if (ne2100_probe(sc, ia))
 			return (1);
-		if (depca_probe(sc, ia))
-			return (1);
+/*		if (depca_probe(sc, ia))
+			return (1); */
 	}
 #endif
 
@@ -157,11 +210,11 @@ leprobe(parent, match, aux)
 int
 depca_probe(sc, ia)
 	struct le_softc *sc;
-	struct isa_attach_args *ia;
+        struct isa_attach_args *ia;
 {
-	int iobase = ia->ia_iobase, port;
-	u_long sum, rom_sum;
-	u_char x;
+        int iobase = ia->ia_iobase, port;
+	/* u_long rom_sum; */
+	/* u_char x; */
 	int i;
 
 	sc->sc_rap = iobase + DEPCA_RAP;
@@ -172,6 +225,8 @@ depca_probe(sc, ia)
 		return 0;
 
 	outb(iobase + DEPCA_CSR, DEPCA_CSR_DUM);
+
+	printf("extract mac address\n");
 
 	/*
 	 * Extract the physical MAC address from the ROM.
@@ -188,24 +243,24 @@ depca_probe(sc, ia)
 	 */
 	port = iobase + DEPCA_ADP;
 	for (i = 0; i < 32; i++)
-		if (inb(port) == 0xff && inb(port) == 0x00 &&
-		    inb(port) == 0x55 && inb(port) == 0xaa &&
-		    inb(port) == 0xff && inb(port) == 0x00 &&
-		    inb(port) == 0x55 && inb(port) == 0xaa)
+		if (ioinb(port) == 0xff && ioinb(port) == 0x00 &&
+		    ioinb(port) == 0x55 && ioinb(port) == 0xaa &&
+		    ioinb(port) == 0xff && ioinb(port) == 0x00 &&
+		    ioinb(port) == 0x55 && ioinb(port) == 0xaa)
 			goto found;
-	port = iobase + DEPCA_ADP + 1;
+	port = DEPCA_ADP + 1;
 	for (i = 0; i < 32; i++)
-		if (inb(port) == 0xff && inb(port) == 0x00 &&
-		    inb(port) == 0x55 && inb(port) == 0xaa &&
-		    inb(port) == 0xff && inb(port) == 0x00 &&
-		    inb(port) == 0x55 && inb(port) == 0xaa)
+		if (ioinb(port) == 0xff && ioinb(port) == 0x00 &&
+		    ioinb(port) == 0x55 && ioinb(port) == 0xaa &&
+		    ioinb(port) == 0xff && ioinb(port) == 0x00 &&
+		    ioinb(port) == 0x55 && ioinb(port) == 0xaa)
 			goto found;
 	printf("%s: address not found\n", sc->sc_dev.dv_xname);
 	return 0;
 
 found:
 	for (i = 0; i < sizeof(sc->sc_arpcom.ac_enaddr); i++)
-		sc->sc_arpcom.ac_enaddr[i] = inb(port);
+		sc->sc_arpcom.ac_enaddr[i] = ioinb(port);
 
 #if 0
 	sum =
@@ -245,6 +300,10 @@ ne2100_probe(sc, ia)
 
 	sc->sc_rap = iobase + NE2100_RAP;
 	sc->sc_rdp = iobase + NE2100_RDP;
+#if DEBUG_STARTUP
+	printf("using io addresses RAP 0x%04x RDP 0x%04x\n", sc->sc_rap, 
+		sc->sc_rdp);
+#endif
 	sc->sc_card = NE2100;
 
 	if (lance_probe(sc) == 0)
@@ -254,7 +313,7 @@ ne2100_probe(sc, ia)
 	 * Extract the physical MAC address from the ROM.
 	 */
 	for (i = 0; i < sizeof(sc->sc_arpcom.ac_enaddr); i++)
-		sc->sc_arpcom.ac_enaddr[i] = inb(iobase + i);
+		sc->sc_arpcom.ac_enaddr[i] = ioinb(iobase + i);
 
 	ia->ia_iosize = 24;
 	return 1;
@@ -268,6 +327,8 @@ bicc_probe(sc, ia)
 	int iobase = ia->ia_iobase;
 	int i;
 
+	printf("bicc_probe\n");
+
 	sc->sc_rap = iobase + BICC_RAP;
 	sc->sc_rdp = iobase + BICC_RDP;
 	sc->sc_card = BICC;
@@ -279,7 +340,7 @@ bicc_probe(sc, ia)
 	 * Extract the physical MAC address from the ROM.
 	 */
 	for (i = 0; i < sizeof(sc->sc_arpcom.ac_enaddr); i++)
-		sc->sc_arpcom.ac_enaddr[i] = inb(iobase + i * 2);
+		sc->sc_arpcom.ac_enaddr[i] = ioinb(iobase + i * 2);
 
 	ia->ia_iosize = 16;
 	return 1;
@@ -292,11 +353,17 @@ int
 lance_probe(sc)
 	struct le_softc *sc;
 {
-
 	/* Stop the LANCE chip and put it in a known state. */
+#if DEBUG_STARTUP
+	printf("lance_probe\n");
+	printf("stop the lance chip and reset\n");
+#endif
 	lewrcsr(sc, LE_CSR0, LE_C0_STOP);
-	LE_DELAY(100);
+	LE_DELAY(100); 
 
+#if DEBUG_STARTUP
+	printf("verify stop\n");
+#endif
 	if (lerdcsr(sc, LE_CSR0) != LE_C0_STOP)
 		return 0;
 
@@ -305,16 +372,17 @@ lance_probe(sc)
 }
 #endif
 
+/* leattach was ifzeroed out but I think I did that */
 void
-leattach(parent, self, aux)
-	struct device *parent, *self;
+leattach(/*parent,*/ self, aux)
+	struct device /* *parent, */ *self;
 	void *aux;
 {
 	struct le_softc *sc = (void *)self;
-	extern struct cfdriver isacd, pcicd;
+	/* extern struct cfdriver isacd, pcicd; */
 
 #if NPCI > 0
-	if (parent->dv_cfdata->cf_driver == &pcicd) {
+	if (1 /*parent->dv_cfdata->cf_driver == &pcicd*/) {
 		struct pci_attach_args *pa = aux;
 		int iobase;
 
@@ -343,7 +411,11 @@ leattach(parent, self, aux)
 		u_char *mem, val;
 		int i;
 
-		mem = sc->sc_mem = ISA_HOLE_VADDR(ia->ia_maddr);
+                caddr_t vaddr = NULL;
+
+		printf("leaix: card is DEPCA\n");
+
+                mem = sc->sc_mem = MAPIN(vaddr, ia->ia_maddr, ia->ia_msize);
 
 		val = 0xff;
 		for (;;) {
@@ -366,15 +438,24 @@ leattach(parent, self, aux)
 	} else
 #endif
 	{
-		sc->sc_mem = malloc(16384, M_DEVBUF, M_NOWAIT);
+#if DEBUG_STARTUP
+		printf("leaix: card is non-DEPCA\n");
+#endif
+		/* sc->sc_mem = malloc(16384, M_DEVBUF, M_NOWAIT); */
+		sc->sc_mem = kmemalloc(16384, MA_PAGE | MA_LONGTERM);
 		if (sc->sc_mem == 0) {
 			printf("%s: couldn't allocate memory for card\n",
 			    sc->sc_dev.dv_xname);
 			return;
 		}
+		bzero(sc->sc_mem, 16384);
 
 		sc->sc_conf3 = 0;
-		sc->sc_addr = kvtop(sc->sc_mem);
+		/* rak: kvtop: convert a kernel virtual address 
+		   to a physical address -- this has a corresponding 
+	   	   function here*/
+		/* sc->sc_addr = KVTOP(sc->sc_mem); */
+		sc->sc_addr = kvtophys(sc->sc_mem);
 		sc->sc_memsize = 16384;
 	}
 
@@ -384,20 +465,34 @@ leattach(parent, self, aux)
 	sc->sc_copyfrombuf = copyfrombuf_contig;
 	sc->sc_zerobuf = zerobuf_contig;
 
-	sc->sc_arpcom.ac_if.if_name = lecd.cd_name;
+	/*sc->sc_arpcom.ac_if.if_name = lecd.cd_name; */
+	sc->sc_arpcom.ac_if.if_name = "eth";
 	leconfig(sc);
 
 	printf("%s: type %s\n", sc->sc_dev.dv_xname, card_type[sc->sc_card]);
 
 #if NISA > 0
-	if (parent->dv_cfdata->cf_driver == &isacd) {
+	if (1 /* parent->dv_cfdata->cf_driver == &isacd */) {
 		struct isa_attach_args *ia = aux;
 
+		/* rak: I don't see any guidance about setup  
+                   for device-mastered DMA */
+		/*
 		if (ia->ia_drq != DRQUNK)
 			isa_dmacascade(ia->ia_drq);
+		*/
 
-		sc->sc_ih = isa_intr_establish(ia->ia_irq, ISA_IST_EDGE,
-		    ISA_IPL_NET, leintredge, sc);
+		/* rak: on netbsd this is 
+		isa_intr_establish(ic, irq, type, level, handler, arg) */
+		/* sc->sc_ih = isa_intr_establish(ia->ia_irq, ISA_IST_EDGE,
+		    ISA_IPL_NET, leintredge, sc); */
+#if DEBUG_STARTUP
+		printf("leaix: setting up leintredge on irq %d\n", ia->ia_irq);
+#endif
+		intrattach(leintredge, ia->ia_irq, SPL_IMP); 
+#if DEBUG_STARTUP
+		printf("leaix: done\n");
+#endif
 	}
 #endif
 
@@ -409,11 +504,13 @@ leattach(parent, self, aux)
 		    pci_conf_read(pa->pa_tag, PCI_COMMAND_STATUS_REG) |
 		    PCI_COMMAND_MASTER_ENABLE);
 
-		sc->sc_ih = pci_map_int(pa->pa_tag, PCI_IPL_NET, leintr, sc);
+		/* sc->sc_ih = pci_map_int(pa->pa_tag, PCI_IPL_NET, leintr, sc); */
+		intrattach(leintredge, ia->ia_irq, SPL_IMP); 
 	}
 #endif
 
-	sc->sc_sh = shutdownhook_establish(leshutdown, sc);
+	/* FIXME: but hookup leshutdown to our reset function */
+	/* sc->sc_sh = shutdownhook_establish(leshutdown, sc); */
 }
 
 void
@@ -429,14 +526,13 @@ leshutdown(arg)
 /*
  * Controller interrupt.
  */
-leintredge(arg)
-	void *arg;
+int leintredge()
 {
 
-	if (leintr(arg) == 0)
+	if (leintr() == 0)
 		return (0);
 	for (;;)
-		if (leintr(arg) == 0)
+		if (leintr() == 0)
 			return (1);
 }
 #endif

@@ -13,6 +13,10 @@
  *   for damages incurred with its use.
  */
 
+#include "../../../am7990_adds.h"
+#include "add_types.h"
+#include "if_levar_adds.h"
+
 /* Board types */
 #define	BICC		1
 #define	BICC_RDP	0xc
@@ -79,5 +83,6 @@ struct le_softc {
 	void	*sc_ih;
 	void	*sc_sh;
 	int	sc_card;
+	
 	int	sc_rap, sc_rdp;		/* LANCE registers */
 };
