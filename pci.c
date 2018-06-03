@@ -118,6 +118,12 @@ pci_address_t make_pci_address_t(uint8_t bus, uint8_t slot, uint8_t func) {
 	return out;
 }
 
+/** Scan the PCI devices on the system
+ *  for those that match the ids on a list
+ *  and return the address of the first found,
+ *  otherwise return a placeholder address
+ *  (use pci_not_found() on it to check)
+ */
 pci_address_t find_first_pci_dev(pci_id_t * id_list) {
 	uint16_t vendor, device;
 	uint8_t bus;
@@ -135,11 +141,14 @@ pci_address_t find_first_pci_dev(pci_id_t * id_list) {
 			if (vendor != 0xffff) {
 				device = pci_config_read_w_internal(bus, slot, 0, 2);
 				if (device != 0xffff) {
+					/* found an actual pci device */
 					pci_id = build_pci_id(vendor, device);
+					/* now check to see if it's on the list */
 					for (cur = id_list; *cur != 0; cur++) {
 						if (*cur == pci_id) {
+							/* it was on the list so return it */
 							printf("    bus %d slot %d: vendor 0x%04x device 0x%04x\n", bus, slot, vendor, device);
-				return make_pci_address_t(bus, slot, 0);
+							return make_pci_address_t(bus, slot, 0);
 						}
 					}
 #if DEBUG_PCI

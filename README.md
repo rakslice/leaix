@@ -7,9 +7,10 @@ This driver is **experimental**; it has been used a bit in a virtualized environ
 
 Build with `make`, install with `make install`.
 
-This driver is known to build with the Metaware compiler for AIX PS/2, and with GCC 2.7.2.3.  Uncomment the line starting with `CC=gcc` to build with GCC.
+This driver is known to build with the Metaware compiler for AIX PS/2, and with GCC 2.7.2.3.
+If you have GCC, to build with it instead, edit the `Makefile` and uncomment the line starting with `CC=gcc`.
 
-Note that the headers on the system I've built this on have been fixed up here and there over the course of a couple of weeks; you may need to take out the `-Werror` on a fresh install (note the presence of `-Wno-comment` already.
+Note that the headers on the system I've built this on have been modified (fixed up here and there over the course of a couple of weeks). The stock headers on AIX 1.x are a bit sketchy (note the presence of `-Wno-comment` already); you may need to take out the `-Werror` or even more serious actions to get through the build on freshly installed AIX headers.
 
 ## Usage ##
 
@@ -22,7 +23,7 @@ route add net default 192.168.2.2 10
 echo nameserver 8.8.8.8 < /etc/resolv.conf
 ```
 
-Enable tons of debug messages by doing:
+Enable tons of debug messages by setting the `DEBUG` flag on the interface with:
 ```
 ifconfig eth0 debug
 ```
