@@ -533,10 +533,7 @@ void process_inbound_packet(struct le_softc *sc, struct ifnet *ifp,
      /* things that the caller needs to have done: */ 
      /* - clear the interrupt */ 
      /* - let the adapter know that these receive buffers are free */ 
-     /* - store the packet header.  Pass the packet type in 
-        packet_type, the address of the data beyond 
-        the header in addr_of_data, the length 
-        of the data in data_len, set the interface 
+     /* - Pass the packet type in, set the interface
         pointer to if, and the arpcom struct to arper. */
 
      switch (packet_type) { 
@@ -552,9 +549,10 @@ void process_inbound_packet(struct le_softc *sc, struct ifnet *ifp,
                     m_freem(m); 
                     break; 
                } 
-               DEBUGMSG2(sc, "inbound packet is IP; getting queued for stack"); 
+               DEBUGMSG2(sc, "inbound packet is IP; getting queued for stack");
+               /* queue our mbufs up for the network stack */
                IF_ENQUEUE(&ipintrq, m); 
-               /* schedule a visit to our mbufs from the network stack */
+               /* schedule a visit from the network stack */
                schednetisr(NETISR_IP); 
                break; 
           case LANTYPE_ARP:
@@ -656,7 +654,7 @@ leread(sc, boff, len)
 	default:
 		DEBUGMSG3(sc, "Unknown eth_type 0x%04x in leread", 
 			ntohs(eh->eth_type));
-                /* FALL THROUGH */
+			/* no break */
 	case LANTYPE_IP:
 	case LANTYPE_ARP:
 		/* this version of the leget call only passes the payload: */
