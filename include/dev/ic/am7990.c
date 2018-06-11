@@ -140,7 +140,7 @@ leconfig(sc)
 	ifp->if_flags =
 	    IFF_BROADCAST | /* IFF_SIMPLEX | */ IFF_NOTRAILERS /* | IFF_MULTICAST */;
 	ifp->if_flags |= IFF_ETHERNET;
-	ifp->if_mtu = ETHERMTU;
+	ifp->if_mtu = ETHERNETMTU; /* ETHERMTU; */
 
 	/* Attach the interface. */
 	if_attach(ifp);
@@ -638,7 +638,7 @@ leread(sc, boff, len)
         struct ether_header * eh;
 
 	if (len <= sizeof(struct ether_header) ||
-	    len > ETHERMTU + sizeof(struct ether_header)) {
+	    len > /* ETHERMTU */ ETHERNETMTU + sizeof(struct ether_header)) {
 		printf("%s: invalid packet size %d; dropping\n",
 		    sc->sc_dev.dv_xname, len);
 		ifp->if_ierrors++;
@@ -1200,7 +1200,7 @@ lestart(ifp)
 		len = leput(sc, LE_TBUFADDR(sc, bix), m);
 
 #ifdef LEDEBUG
-		if (len > ETHERMTU + sizeof(struct ether_header))
+		if (len > /* ETHERMTU */ ETHERNETMTU + sizeof(struct ether_header))
 			printf("packet length %d\n", len);
 #endif
 		DEBUGMSG2(sc, "set ifp->if_timer call for 20s");

@@ -3,6 +3,8 @@
 
 /* Additional definitions for if_levar.h */
 
+#define ETHERNETMTU 1500
+
 #include <sys/if_ieee802.h>
 
 #endif

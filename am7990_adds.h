@@ -3,6 +3,8 @@
 
 /* Additional definitions for am7990.c */
 
+#define ETHERNETMTU 1500
+
 #include <types.h>
 #include <sys/socket.h>
 #include <sys/in.h>
