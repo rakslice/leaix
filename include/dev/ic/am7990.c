@@ -1146,6 +1146,7 @@ lestart(ifp)
 	struct letmd tmd;
 	int rp;
 	int len;
+	spl_t s;
 
 	DEBUGMSG2(sc, "lestart");
 
@@ -1173,7 +1174,9 @@ lestart(ifp)
 		}
 
 		DEBUGMSG2(sc, "dequeue mbuf - attempting");
+		s = splimp();
 		IF_DEQUEUE(&ifp->if_snd, m);
+		splx(s);
 		if (m == 0) {
 			DEBUGMSG2(sc, "dequeue failed bc queue is empty");
 			break;
