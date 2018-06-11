@@ -20,7 +20,7 @@ Once you are up and running on a kernel that includes the driver, you should see
 ifconfig eth0 inet 10.0.2.15 netmask 0xffffff00
 ifconfig eth0
 route add net default 192.168.2.2 10
-echo nameserver 8.8.8.8 < /etc/resolv.conf
+echo nameserver 8.8.8.8 > /etc/resolv.conf
 ```
 
 Enable tons of debug messages by setting the `DEBUG` flag on the interface with:
