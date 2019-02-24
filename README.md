@@ -18,7 +18,7 @@ Once you are up and running on a kernel that includes the driver, you should see
 
 ```
 ifconfig eth0 inet 10.0.2.15 netmask 0xffffff00
-ifconfig eth0
+ifconfig eth0 up
 route add net default 192.168.2.2 10
 echo nameserver 8.8.8.8 > /etc/resolv.conf
 ```
