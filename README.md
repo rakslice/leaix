@@ -1,5 +1,5 @@
 # leaix #
-An AMD am799x (PCnet/Lance) Ethernet driver for AIX PS/2 1.3.  Ported from NetBSD 1.1.
+An AMD am799x PCnet-II PCI (Lance) Ethernet driver for AIX PS/2 1.3.  Ported from NetBSD 1.1.
 
 This driver is **experimental**; it has been used a bit in a virtualized environment with VirtualBox 5.2.x, and has had NO TESTING OTHERWISE. See LICENSE.
 
