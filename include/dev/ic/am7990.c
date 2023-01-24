@@ -358,7 +358,7 @@ leaixinit(dev_t dev)
 	pciaddr = find_first_pci_dev(ids_of_interest);
 
 	if (pci_not_found(pciaddr)) {
-		printf("leaix: card not found");
+		printf("leaix: card not found\n");
 		return 1;
 	} else {
 		uint32_t conf;
