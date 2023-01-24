@@ -2,3 +2,14 @@
 .cproject
 .settings/
 *.rexpfd
+
+# obj
+*.o
+
+# links
+/am7990.c
+/am7990reg.h
+/am7990var.h
+/if_le.h
+/if_levar.h
+
