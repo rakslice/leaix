@@ -19,7 +19,7 @@
    I've lowered them so we time out faster
    when there's no card */
 #define HIGHEST_BUS 7
-#define HIGHEST_SLOT 15
+#define HIGHEST_SLOT 32
 
 uint16_t pci_config_read_w_internal(uint8_t bus, uint8_t slot, 
     uint8_t func, uint8_t offset);
