@@ -28,7 +28,10 @@ links:
 	-ln -s include/dev/ic/am7990var.h .
 	-ln -s include/dev/isa/if_levar.h .
 
-clean:
+cleanlinks:
+	-rm am7990.c am7990reg.h am7990var.h if_levar.h
+
+clean: cleanlinks
 	-rm *.o
 
 install: if_le.o
