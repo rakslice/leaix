@@ -40,7 +40,7 @@ void iooutb (int port, unsigned char val);
 
 /* Get a kernel virtual address for a physical address.
    Set vaddr to NULL before calling. 
-   After the call the address will be in vaddr. *
+   After the call the address will be in vaddr. */
 /* Macro: MAPIN(caddr_t vaddr, paddr_t paddr, int bcnt); */
 
 /* Get a kernel virtual address for a phsyical address
