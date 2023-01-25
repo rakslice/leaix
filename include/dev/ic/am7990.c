@@ -336,7 +336,7 @@ leaixinit(dev_t dev)
 
 	printf("\n");
 	printf("AMD PCnet driver     github.com/rakslice/leaix\n");
-	printf("version 0.0.2 - experimental - use at own risk\n");
+	printf("version 0.0.3 - experimental - use at own risk\n");
 
 	devnum = 0;
 
