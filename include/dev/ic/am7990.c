@@ -119,6 +119,23 @@ int leaixoutput(struct ifnet *ifp, struct mbuf *m0, struct sockaddr *dst);
 #define DEBUGMSG4(sc, x, y, z) do { if (sc->sc_debug) { printf("leaix: %s%d " , sc->sc_arpcom.ac_if.if_name , sc->sc_arpcom.ac_if.if_unit ); printf(x, y, z); printf("\n"); } } while(0) 
 #endif
 
+char leaix_mac_buf[18]; // 12 hex digits + 5 separators + 1 null terminator
+
+char *
+leaix_ether_sprintf(ap)
+	u_char * ap;
+{
+	char * digits = "0123456789abcdef";
+	char * pos = leaix_mac_buf;
+	int i;
+	for (i = 0; i < 6; i++) {
+		if (i) *pos++ = ':';
+		*pos++ = digits[ap[i] >> 4];
+		*pos++ = digits[ap[i] & 0xf];
+	}
+	*pos = '\0';
+	return leaix_mac_buf;
+}
 
 void
 leconfig(sc)
@@ -174,7 +191,7 @@ leconfig(sc)
 		"%d transmit buffers\n",
             ifp->if_name,
             ifp->if_unit,
-	    ether_sprintf(sc->sc_arpcom.ac_enaddr),
+	    leaix_ether_sprintf(sc->sc_arpcom.ac_enaddr),
 	    sc->sc_nrbuf, sc->sc_ntbuf);
 
 	mem = 0;
@@ -336,7 +353,7 @@ leaixinit(dev_t dev)
 
 	printf("\n");
 	printf("AMD PCnet driver     github.com/rakslice/leaix\n");
-	printf("version 0.0.3 - experimental - use at own risk\n");
+	printf("version 0.0.4 - experimental - use at own risk\n");
 
 	devnum = 0;
 
@@ -1439,8 +1456,8 @@ recv_print(sc, no)
 	    rmd.rmd0, rmd.rmd1_hadr, rmd.rmd1_bits, rmd.rmd2, rmd.rmd3);
 	if (len >= sizeof(eh)) {
 		(*sc->sc_copyfrombuf)(sc, &eh, LE_RBUFADDR(sc, no), sizeof(eh));
-		printf(": dst %s", ether_sprintf(eh.eth_dhost));
-		printf(" src %s type %04x\n", ether_sprintf(eh.eth_shost),
+		printf(": dst %s", leaix_ether_sprintf(eh.eth_dhost));
+		printf(" src %s type %04x\n", leaix_ether_sprintf(eh.eth_shost),
 		    ntohs(eh.eth_type));
 	}
 #if DUMP_PACKET
@@ -1481,8 +1498,8 @@ xmit_print(sc, no)
 	    tmd.tmd0, tmd.tmd1_hadr, tmd.tmd1_bits, tmd.tmd2, tmd.tmd3);
 	if (len >= sizeof(eh)) {
 		(*sc->sc_copyfrombuf)(sc, &eh, LE_TBUFADDR(sc, no), sizeof(eh));
-		printf(": dst %s", ether_sprintf(eh.eth_dhost));
-		printf(" src %s type %04x\n", ether_sprintf(eh.eth_shost),
+		printf(": dst %s", leaix_ether_sprintf(eh.eth_dhost));
+		printf(" src %s type %04x\n", leaix_ether_sprintf(eh.eth_shost),
 		    ntohs(eh.eth_type));
 	}
 #if DUMP_PACKET

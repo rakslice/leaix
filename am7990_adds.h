@@ -86,7 +86,7 @@ paddr_t kvtophys (caddr_t cptr);
 
 int if_attach(struct ifnet *);
 int panic(char *s);
-char * ether_sprintf(u_char * ap);
+char * leaix_ether_sprintf(u_char * ap);
 
 int mclput(struct mbuf *m);
 void m_freem(struct mbuf *m);
