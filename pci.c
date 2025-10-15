@@ -62,10 +62,13 @@ int pci_config_mechanism = 0;
 int pci_check_config_mechanism_1(void) {
     uint32_t tmp;
     const uint32_t testval = 0x80000000;
+    int out;
     outb(0xCFB, 1);
     tmp = sysInLong(0xCF8);
     sysOutLong(0xCF8, testval);
-    return sysInLong(0xCF8) == testval;
+    out = sysInLong(0xCF8) == testval;
+    sysOutLong(0xCF8, tmp);
+    return out;
 }
 
 void pci_init(void) {
